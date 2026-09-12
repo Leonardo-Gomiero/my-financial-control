@@ -3,7 +3,12 @@ import { atualizarGraficos } from './charts.js';
 
 let baseDados = [];
 
-// Elementos DOM
+const nomesMeses = {
+    1: 'Janeiro', 2: 'Fevereiro', 3: 'Março', 4: 'Abril',
+    5: 'Maio', 6: 'Junho', 7: 'Julho', 8: 'Agosto',
+    9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
+};
+
 const elLoading = document.getElementById('loading');
 const elAreaFiltros = document.getElementById('areaFiltros');
 const elAreaGraficos = document.getElementById('areaGraficos');
@@ -15,7 +20,6 @@ const selects = {
     subtipo: document.getElementById('fSubtipo')
 };
 
-// Inicialização
 window.addEventListener('DOMContentLoaded', carregarDados);
 document.getElementById('btnAtualizar').addEventListener('click', carregarDados);
 
@@ -31,6 +35,17 @@ async function carregarDados() {
     try {
         baseDados = await fetchSheetData();
         popularSelects(baseDados);
+
+        const hoje = new Date();
+        const anoAtual = hoje.getFullYear().toString();
+        const mesAtualNumerico = hoje.getMonth() + 1;
+
+        const anoExiste = Array.from(selects.ano.options).some(opt => opt.value === anoAtual);
+        selects.ano.value = anoExiste ? anoAtual : "";
+
+        const mesOption = Array.from(selects.mes.options).find(opt => Number(opt.value) === mesAtualNumerico);
+        selects.mes.value = mesOption ? mesOption.value : "";
+
         aplicarFiltros();
 
         elLoading.style.display = 'none';
@@ -46,7 +61,14 @@ function popularSelects(dados) {
     const extrairUnicos = (chave) => [...new Set(dados.map(d => d[chave]).filter(Boolean))].sort();
 
     preencherOpcoes(selects.ano, extrairUnicos('ano'));
-    preencherOpcoes(selects.mes, extrairUnicos('mes').sort((a,b)=>a-b));
+    
+    const mesesUnicos = extrairUnicos('mes').sort((a,b) => Number(a) - Number(b));
+    selects.mes.innerHTML = '<option value="">Todos</option>';
+    mesesUnicos.forEach(val => {
+        const nomeMes = nomesMeses[Number(val)] || val;
+        selects.mes.innerHTML += `<option value="${val}">${nomeMes}</option>`;
+    });
+
     preencherOpcoes(selects.tipo, extrairUnicos('tipo'));
     preencherOpcoes(selects.subtipo, extrairUnicos('subtipo'));
 }
@@ -66,7 +88,7 @@ function aplicarFiltros() {
 
     const dadosFiltrados = baseDados.filter(d => {
         return (!vAno || d.ano == vAno) &&
-               (!vMes || d.mes == vMes) &&
+               (!vMes || String(d.mes) == vMes) &&
                (!vTipo || d.tipo == vTipo) &&
                (!vSubtipo || d.subtipo == vSubtipo);
     });

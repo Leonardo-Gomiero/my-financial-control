@@ -6,7 +6,6 @@ export async function fetchSheetData() {
     
     const dadosFormatados = [];
     
-    // Pula o cabeçalho (i=1)
     for (let i = 1; i < dadosPlanilha.length; i++) {
         const linha = dadosPlanilha[i];
         
