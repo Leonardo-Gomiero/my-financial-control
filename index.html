@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Financeiro Live</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --primary: #4285f4; --bg: #f4f6f9; --text: #333; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 20px; margin: 0; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        h2 { color: var(--primary); margin: 0; }
+        .btn { background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; }
+        
+        .filtros { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 20px; }
+        .filtro-group { display: flex; flex-direction: column; }
+        .filtro-group label { font-size: 0.85em; font-weight: bold; margin-bottom: 5px; color: #555; }
+        select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; }
+
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+        .chart-container { position: relative; height: 300px; width: 100%; }
+        
+        #loading { text-align: center; color: #666; padding: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card header">
+        <h2>Dashboard Live Sheets</h2>
+        <button class="btn" onclick="carregarDados()">🔄 Atualizar Dados</button>
+    </div>
+
+    <div id="loading">Carregando dados e montando gráficos... ⏳</div>
+
+    <div class="card" id="areaFiltros" style="display: none;">
+        <div class="filtros">
+            <div class="filtro-group">
+                <label>Ano</label>
+                <select id="fAno" onchange="aplicarFiltros()"><option value="">Todos</option></select>
+            </div>
+            <div class="filtro-group">
+                <label>Mês</label>
+                <select id="fMes" onchange="aplicarFiltros()"><option value="">Todos</option></select>
+            </div>
+            <div class="filtro-group">
+                <label>Tipo</label>
+                <select id="fTipo" onchange="aplicarFiltros()"><option value="">Todos</option></select>
+            </div>
+            <div class="filtro-group">
+                <label>Subtipo</label>
+                <select id="fSubtipo" onchange="aplicarFiltros()"><option value="">Todos</option></select>
+            </div>
+        </div>
+    </div>
+
+    <div class="charts-grid" id="areaGraficos" style="display: none;">
+        <div class="card">
+            <h3 style="text-align: center; font-size: 1.1em;">Balanço: Entradas vs Saídas</h3>
+            <div class="chart-container">
+                <canvas id="chartFluxo"></canvas>
+            </div>
+        </div>
+        <div class="card">
+            <h3 style="text-align: center; font-size: 1.1em;">Despesas por Tipo (Saídas)</h3>
+            <div class="chart-container">
+                <canvas id="chartTipos"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const url_api = 'https://script.google.com/macros/s/AKfycby3hj1dLdUQWVjvqu2Oi44mk_kXCjvdficYTX-oyIIFCLPeOVxn6XTGDsyCAza1jvA/exec';
+
+    let baseDados = [];
+    let graficoFluxo, graficoTipos;
+
+    async function carregarDados() {
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('areaFiltros').style.display = 'none';
+        document.getElementById('areaGraficos').style.display = 'none';
+
+        try {
+            const resposta = await fetch(url_api);
+            const dadosPlanilha = await resposta.json();
+            
+            baseDados = [];
+            for (let i = 1; i < dadosPlanilha.length; i++) {
+                const linha = dadosPlanilha[i];
+                
+                let dataStr = linha[1] || '';
+                let anoExtraido = dataStr.length >= 4 ? dataStr.substring(0, 4) : '';
+                
+                let valor = parseFloat(linha[5]) || 0;
+
+                if(linha[2] || linha[5]) {
+                    baseDados.push({
+                        mes: linha[0] === '#VALUE!' ? '' : linha[0],
+                        data: dataStr,
+                        ano: anoExtraido,
+                        fluxo: linha[2] || '',
+                        tipo: linha[3] || '',
+                        subtipo: linha[4] || '',
+                        valor: valor
+                    });
+                }
+            }
+
+            popularSelects(baseDados);
+            aplicarFiltros();
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('areaFiltros').style.display = 'block';
+            document.getElementById('areaGraficos').style.display = 'grid';
+
+        } catch (erro) {
+            console.error(erro);
+            document.getElementById('loading').innerText = 'Erro ao carregar os dados.';
+        }
+    }
+
+    function popularSelects(dados) {
+        const anos = [...new Set(dados.map(d => d.ano).filter(x => x))].sort();
+        const meses = [...new Set(dados.map(d => d.mes).filter(x => x))].sort((a,b)=>a-b);
+        const tipos = [...new Set(dados.map(d => d.tipo).filter(x => x))].sort();
+        const subtipos = [...new Set(dados.map(d => d.subtipo).filter(x => x))].sort();
+
+        preencherOpcoes('fAno', anos);
+        preencherOpcoes('fMes', meses);
+        preencherOpcoes('fTipo', tipos);
+        preencherOpcoes('fSubtipo', subtipos);
+    }
+
+    function preencherOpcoes(idElemento, arrayValores) {
+        const select = document.getElementById(idElemento);
+        select.innerHTML = '<option value="">Todos</option>';
+        arrayValores.forEach(val => {
+            select.innerHTML += `<option value="${val}">${val}</option>`;
+        });
+    }
+
+    function aplicarFiltros() {
+        const vAno = document.getElementById('fAno').value;
+        const vMes = document.getElementById('fMes').value;
+        const vTipo = document.getElementById('fTipo').value;
+        const vSubtipo = document.getElementById('fSubtipo').value;
+
+        const dadosFiltrados = baseDados.filter(d => {
+            return (!vAno || d.ano == vAno) &&
+                   (!vMes || d.mes == vMes) &&
+                   (!vTipo || d.tipo == vTipo) &&
+                   (!vSubtipo || d.subtipo == vSubtipo);
+        });
+
+        atualizarGraficos(dadosFiltrados);
+    }
+
+    function atualizarGraficos(dados) {
+        let totalEntradas = 0;
+        let totalSaidas = 0;
+        let gastosPorTipo = {};
+
+        dados.forEach(d => {
+            if(d.fluxo.toLowerCase() === 'entrada') totalEntradas += d.valor;
+            if(d.fluxo.toLowerCase() === 'saída' || d.fluxo.toLowerCase() === 'saida') {
+                totalSaidas += d.valor;
+                
+                let tipoLabel = d.tipo || 'Não Categorizado';
+                if(!gastosPorTipo[tipoLabel]) gastosPorTipo[tipoLabel] = 0;
+                gastosPorTipo[tipoLabel] += d.valor;
+            }
+        });
+
+        const ctxFluxo = document.getElementById('chartFluxo').getContext('2d');
+        if(graficoFluxo) graficoFluxo.destroy();
+        
+        graficoFluxo = new Chart(ctxFluxo, {
+            type: 'bar',
+            data: {
+                labels: ['Entradas', 'Saídas'],
+                datasets: [{
+                    label: 'Total em R$',
+                    data: [totalEntradas, totalSaidas],
+                    backgroundColor: ['#34a853', '#ea4335'],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        const ctxTipos = document.getElementById('chartTipos').getContext('2d');
+        if(graficoTipos) graficoTipos.destroy();
+        
+        const labelsTipos = Object.keys(gastosPorTipo);
+        const dataTipos = Object.values(gastosPorTipo);
+
+        graficoTipos = new Chart(ctxTipos, {
+            type: 'doughnut',
+            data: {
+                labels: labelsTipos.length ? labelsTipos : ['Sem dados'],
+                datasets: [{
+                    data: dataTipos.length ? dataTipos : [1],
+                    backgroundColor: dataTipos.length ? 
+                        ['#4285f4', '#fbbc05', '#ff6d01', '#46bdc6', '#9c27b0', '#795548'] : 
+                        ['#e0e0e0'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: {
+                    legend: { position: 'right' }
+                }
+            }
+        });
+    }
+
+    window.onload = carregarDados;
+</script>
+
+</body>
+</html>
