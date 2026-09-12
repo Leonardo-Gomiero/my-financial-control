@@ -30,6 +30,7 @@ body {
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
+    gap: 15px;
 }
 
 h2 {
@@ -69,11 +70,13 @@ select {
     padding: 8px;
     border-radius: 6px;
     border: 1px solid #ccc;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .charts-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 20px;
 }
 
@@ -94,4 +97,31 @@ h3 {
     color: #666;
     padding: 20px;
     font-weight: bold;
+}
+
+@media (max-width: 600px) {
+    body {
+        padding: 10px;
+    }
+
+    .header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .header h2 {
+        font-size: 1.5em;
+    }
+
+    .btn {
+        width: 100%;
+    }
+
+    .filtros {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .card {
+        padding: 15px;
+    }
 }
