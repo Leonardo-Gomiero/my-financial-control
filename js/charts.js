@@ -41,7 +41,10 @@ function renderChartTipos(gastos) {
     const ctx = document.getElementById('chartTipos').getContext('2d');
     if(graficoTipos) graficoTipos.destroy();
     
-    const labels = Object.keys(gastos);
+    const labels = Object.entries(gastos).map(([chave, valor]) => {
+        return `${chave}: R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    });
+    
     const data = Object.values(gastos);
 
     graficoTipos = new Chart(ctx, {
@@ -54,6 +57,13 @@ function renderChartTipos(gastos) {
                 borderWidth: 2
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'right' } } }
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            cutout: '60%', 
+            plugins: { 
+                legend: { position: 'right' } 
+            } 
+        }
     });
 }
