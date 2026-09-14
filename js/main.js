@@ -1,5 +1,5 @@
 import { fetchSheetData } from './api.js';
-import { atualizarGraficos } from './charts.js';
+import { atualizarAnalise } from './charts.js';
 
 let baseDados = [];
 
@@ -10,8 +10,8 @@ const nomesMeses = {
 };
 
 const elLoading = document.getElementById('loading');
-const elAreaFiltros = document.getElementById('areaFiltros');
-const elAreaGraficos = document.getElementById('areaGraficos');
+const elApp = document.getElementById('app');
+const elEmptyState = document.getElementById('emptyState');
 
 const selects = {
     ano: document.getElementById('fAno'),
@@ -28,9 +28,8 @@ Object.values(selects).forEach(select => {
 });
 
 async function carregarDados() {
-    elLoading.style.display = 'block';
-    elAreaFiltros.style.display = 'none';
-    elAreaGraficos.style.display = 'none';
+    elLoading.hidden = false;
+    elApp.hidden = true;
 
     try {
         baseDados = await fetchSheetData();
@@ -48,12 +47,11 @@ async function carregarDados() {
 
         aplicarFiltros();
 
-        elLoading.style.display = 'none';
-        elAreaFiltros.style.display = 'block';
-        elAreaGraficos.style.display = 'grid';
+        elLoading.hidden = true;
+        elApp.hidden = false;
     } catch (erro) {
         console.error("Falha ao inicializar app:", erro);
-        elLoading.innerText = 'Erro ao carregar os dados.';
+        elLoading.innerHTML = '<span>Erro ao carregar os dados.</span>';
     }
 }
 
@@ -61,8 +59,8 @@ function popularSelects(dados) {
     const extrairUnicos = (chave) => [...new Set(dados.map(d => d[chave]).filter(Boolean))].sort();
 
     preencherOpcoes(selects.ano, extrairUnicos('ano'));
-    
-    const mesesUnicos = extrairUnicos('mes').sort((a,b) => Number(a) - Number(b));
+
+    const mesesUnicos = extrairUnicos('mes').sort((a, b) => Number(a) - Number(b));
     selects.mes.innerHTML = '<option value="">Todos</option>';
     mesesUnicos.forEach(val => {
         const nomeMes = nomesMeses[Number(val)] || val;
@@ -80,18 +78,28 @@ function preencherOpcoes(elementoSelect, arrayValores) {
     });
 }
 
+function filtrar(dados, { ano, mes, tipo, subtipo }) {
+    return dados.filter(d =>
+        (!ano || d.ano == ano) &&
+        (!mes || String(d.mes) == mes) &&
+        (!tipo || d.tipo == tipo) &&
+        (!subtipo || d.subtipo == subtipo)
+    );
+}
+
 function aplicarFiltros() {
-    const vAno = selects.ano.value;
-    const vMes = selects.mes.value;
-    const vTipo = selects.tipo.value;
-    const vSubtipo = selects.subtipo.value;
+    const filtros = {
+        ano: selects.ano.value,
+        mes: selects.mes.value,
+        tipo: selects.tipo.value,
+        subtipo: selects.subtipo.value
+    };
 
-    const dadosFiltrados = baseDados.filter(d => {
-        return (!vAno || d.ano == vAno) &&
-               (!vMes || String(d.mes) == vMes) &&
-               (!vTipo || d.tipo == vTipo) &&
-               (!vSubtipo || d.subtipo == vSubtipo);
-    });
+    const dadosFiltrados = filtrar(baseDados, filtros);
+    // A evolução mensal ignora o filtro de mês para mostrar a tendência ao longo do tempo.
+    const dadosTendencia = filtrar(baseDados, { ...filtros, mes: '' });
 
-    atualizarGraficos(dadosFiltrados);
+    elEmptyState.hidden = dadosFiltrados.length > 0;
+
+    atualizarAnalise(dadosFiltrados, dadosTendencia);
 }

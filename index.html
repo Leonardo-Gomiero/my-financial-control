@@ -11,47 +11,90 @@
 <body>
 
 <div class="container">
-    <div class="card header">
-        <h2>Controle Financeiro</h2>
-        <button class="btn" id="btnAtualizar">🔄 Atualizar Dados</button>
+    <header class="header">
+        <div class="header-title">
+            <h1>Controle Financeiro</h1>
+            <p class="subtitle">Visão geral das suas finanças</p>
+        </div>
+        <button class="btn" id="btnAtualizar">
+            <span class="btn-icon" aria-hidden="true">↻</span> Atualizar
+        </button>
+    </header>
+
+    <div id="loading" class="loading">
+        <div class="spinner" aria-hidden="true"></div>
+        <span>Carregando dados...</span>
     </div>
 
-    <div id="loading">Carregando dados e montando gráficos... ⏳</div>
+    <div id="app" class="app" hidden>
+        <section class="card filtros-card">
+            <div class="filtros">
+                <div class="filtro-group">
+                    <label for="fAno">Ano</label>
+                    <select id="fAno"><option value="">Todos</option></select>
+                </div>
+                <div class="filtro-group">
+                    <label for="fMes">Mês</label>
+                    <select id="fMes"><option value="">Todos</option></select>
+                </div>
+                <div class="filtro-group">
+                    <label for="fTipo">Tipo</label>
+                    <select id="fTipo"><option value="">Todos</option></select>
+                </div>
+                <div class="filtro-group">
+                    <label for="fSubtipo">Subtipo</label>
+                    <select id="fSubtipo"><option value="">Todos</option></select>
+                </div>
+            </div>
+        </section>
 
-    <div class="card" id="areaFiltros" style="display: none;">
-        <div class="filtros">
-            <div class="filtro-group">
-                <label>Ano</label>
-                <select id="fAno"><option value="">Todos</option></select>
+        <section class="kpi-grid">
+            <div class="kpi-card">
+                <span class="kpi-label">Entradas</span>
+                <span class="kpi-value kpi-positive" id="kpiEntradas">R$ 0,00</span>
             </div>
-            <div class="filtro-group">
-                <label>Mês</label>
-                <select id="fMes"><option value="">Todos</option></select>
+            <div class="kpi-card">
+                <span class="kpi-label">Saídas</span>
+                <span class="kpi-value kpi-negative" id="kpiSaidas">R$ 0,00</span>
             </div>
-            <div class="filtro-group">
-                <label>Tipo</label>
-                <select id="fTipo"><option value="">Todos</option></select>
+            <div class="kpi-card">
+                <span class="kpi-label">Saldo</span>
+                <span class="kpi-value" id="kpiSaldo">R$ 0,00</span>
             </div>
-            <div class="filtro-group">
-                <label>Subtipo</label>
-                <select id="fSubtipo"><option value="">Todos</option></select>
+            <div class="kpi-card">
+                <span class="kpi-label">Taxa de Economia</span>
+                <span class="kpi-value" id="kpiEconomia">0%</span>
             </div>
-        </div>
-    </div>
+        </section>
 
-    <div class="charts-grid" id="areaGraficos" style="display: none;">
-        <div class="card">
-            <h3>Balanço: Entradas vs Saídas</h3>
-            <div class="chart-container">
-                <canvas id="chartFluxo"></canvas>
+        <section class="charts-grid">
+            <div class="card chart-card span-2">
+                <h3>Evolução Mensal</h3>
+                <div class="chart-container">
+                    <canvas id="chartEvolucao"></canvas>
+                </div>
             </div>
-        </div>
-        <div class="card">
-            <h3>Despesas por Tipo (Saídas)</h3>
-            <div class="chart-container">
-                <canvas id="chartTipos"></canvas>
+            <div class="card chart-card">
+                <h3>Balanço: Entradas vs Saídas</h3>
+                <div class="chart-container">
+                    <canvas id="chartFluxo"></canvas>
+                </div>
             </div>
-        </div>
+            <div class="card chart-card">
+                <h3>Despesas por Tipo</h3>
+                <div class="chart-container">
+                    <canvas id="chartTipos"></canvas>
+                </div>
+            </div>
+            <div class="card chart-card span-2">
+                <h3>Top Subcategorias de Gastos</h3>
+                <div class="chart-container chart-container-tall">
+                    <canvas id="chartSubtipos"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <p class="empty-state" id="emptyState" hidden>Nenhum dado encontrado para os filtros selecionados.</p>
     </div>
 </div>
 
